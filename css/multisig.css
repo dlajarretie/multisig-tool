@@ -112,6 +112,11 @@ textarea, input[type="text"], input[type="number"], input[type="password"] {
   width: 300px;
   margin-top: 10px;
 }
+.selected_addresses {
+  display: block;
+  width: 600px;
+  margin-top: 10px;
+}
 .fees input {
   width: 100px;
 }
