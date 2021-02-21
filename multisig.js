@@ -100,14 +100,15 @@ Address.prototype = {
     this.fetched = true;
 
     if (!response) return;
-    if (response.length < 1) return;
+    if (!response.txrefs) return;
+    if (response.txrefs.length < 1) return;
 
-    this.unspentOutputs = response.map(function(output) {
+    this.unspentOutputs = response.txrefs.map(function(output) {
       return {
-        hash: output.txid,
-        index: output.vout,
-        amount: output.satoshis,
-        script: Bitcoin.Script.fromHex(output.scriptPubKey)
+        hash: output.tx_hash,
+        index: output.tx_output_n,
+        amount: output.value,
+        script: Bitcoin.Script.fromHex(output.script)
       }
     });
 
@@ -178,7 +179,7 @@ var constants = {
   M: 2,
   MINIMUM_MINER_FEE: 20000,
   BITCOIN_SATOSHIS: 100000000,
-  INSIGHT_API_URL_ROOT: "https://insight.bitpay.com/api/",
+  BLOCKCYPHER_API_URL_ROOT: "https://api.blockcypher.com/v1/btc/main/",
   DEBUG: false,
   REQUEST_PIPELINE_SIZE: 2,
   REQUEST_BACKOFF: 250,
@@ -226,7 +227,7 @@ let processTimeout;
 ***/
 var Insight = {
   getUnspentOutputs: function(address) {
-    return Insight.get("addr/" + address + "/utxo");
+    return Insight.get("addrs/" + address + "?unspentOnly=true&includeScript=true");
   },
   get: function(url) {
     // We need to return a promise
@@ -267,7 +268,7 @@ var Insight = {
     req.requestedTimes = req.requestedTimes + 1;
 
     // Fetch Insight API
-    $.get(constants.INSIGHT_API_URL_ROOT + req.url)
+    $.get(constants.BLOCKCYPHER_API_URL_ROOT + req.url)
     .done(function(res) {
       // Resolve outer promise
       req.resolve(res);
@@ -3445,36 +3446,39 @@ require('./convert')
 module.exports = BigInteger
 },{"./bigi":15,"./convert":16}],18:[function(require,module,exports){
 module.exports={
-  "_from": "bigi@^1.4.0",
+  "_args": [
+    [
+      "bigi@1.4.2",
+      "/Users/dlajarretie/devel/crypto/multisig-tool"
+    ]
+  ],
+  "_from": "bigi@1.4.2",
   "_id": "bigi@1.4.2",
   "_inBundle": false,
   "_integrity": "sha1-nGZalfiLiwj8Bc/XMfVhhZ1yWCU=",
   "_location": "/bigi",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "bigi@^1.4.0",
+    "raw": "bigi@1.4.2",
     "name": "bigi",
     "escapedName": "bigi",
-    "rawSpec": "^1.4.0",
+    "rawSpec": "1.4.2",
     "saveSpec": null,
-    "fetchSpec": "^1.4.0"
+    "fetchSpec": "1.4.2"
   },
   "_requiredBy": [
     "/bitcoinjs-lib",
     "/ecurve"
   ],
   "_resolved": "https://registry.npmjs.org/bigi/-/bigi-1.4.2.tgz",
-  "_shasum": "9c665a95f88b8b08fc05cfd731f561859d725825",
-  "_spec": "bigi@^1.4.0",
-  "_where": "/Users/mihar/Code/multisig-tool/node_modules/bitcoinjs-lib",
+  "_spec": "1.4.2",
+  "_where": "/Users/dlajarretie/devel/crypto/multisig-tool",
   "bugs": {
     "url": "https://github.com/cryptocoinjs/bigi/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {},
-  "deprecated": false,
   "description": "Big integers.",
   "devDependencies": {
     "coveralls": "^2.11.2",
@@ -15316,7 +15320,7 @@ Vault.prototype = {
   },
   buildTransaction: function(options) {
     this.tx = new Transaction({
-      addresses: this.addresses,
+      addresses: this.addresses.filter(address => options.selectedAddresses.includes(address.address)),
       minerFee: options.minerFee,
       destinationAddress: options.destinationAddress,
       seeds: {
